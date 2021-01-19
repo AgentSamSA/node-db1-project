@@ -13,13 +13,7 @@ router.get('/', async (req, res, next) => {
 })
 
 router.get('/:id', checkId, async (req, res, next) => {
-    try {
-        const { id } = req.params;
-        const data = await Account.getById(id);
-        res.json(data);
-    } catch (err) {
-        next(err);
-    }
+    res.status(200).json(req.account);
 })
 
 router.post('/', checkPayload, async (req, res, next) => {
@@ -57,12 +51,29 @@ router.use((err, req, res, next) => {
     res.status(500).json({ message: err.message, stack: err.stack });
 })
 
-function checkId(req, res, next) {
-    next();
+async function checkId(req, res, next) {
+    const { id } = req.params;
+    try {
+        const account = Account.getById(id);
+        if (account) {
+            req.account = account;
+            next();
+        } else {
+            res.status(404).json({ message: "account not found" });
+        }
+    } catch (err) {
+        next(err);
+    }
 }
 
 function checkPayload(req, res, next) {
-    next();
+    if (!req.body) {
+        res.status(400).json({ message: "missing account data" });
+    } else if (!req.body.name || !req.body.budget) {
+        res.status(400).json({ message: "please provide an account name and budget" });
+    } else {
+        next();
+    }
 }
 
 module.exports = router;
